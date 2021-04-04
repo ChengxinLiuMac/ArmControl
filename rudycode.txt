@@ -1,0 +1,165 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+void move_motor_XY(int x, int y);
+void move_motor_Z(int height);
+void move_motor_a_r(int a, int r);
+void callback(char* topic, byte* payload, unsigned int length);
+const char* motion = "somthing is moving";
+const int dirPinz = 10;
+const int stepPinz = 33;
+//TODO: change this once new motor arrives
+const float hight_per_steps = 0.004487;
+int current_height = 0;
+
+const int dirPinr = 10;
+const int stepPinr = 33;
+//TODO: change this once new motor arrives
+const float radius_per_steps = 0.004487;
+int current_radius = 0;
+
+const int dirPina = 10;
+const int stepPina = 33;
+//TODO: change this once new motor arrives
+const float angle_per_steps = 0.004487;
+int current_angle = 0;
+
+const int stepsPerRevolution = 200;
+//TODO: change this afterwards
+const int pump_pin = 44;
+
+// Connect to the WiFi
+const char* ssid = "COGECO-DE490";
+const char* password =  "38956COGECO";
+const char* mqttServer = "192.168.0.140";
+const int mqttPort = 1883;
+
+String z = "";
+String a = "";
+String th = "";
+int z_len = 0;
+int a_len = 0;
+int th_len = 0;
+int counter= 0;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+
+
+// the setup function runs once when you press reset or power the board
+void setup() {
+  
+  // initialize digital pin LED_BUILTIN as an output.
+  Serial.begin(9600);
+
+  WiFi.begin(ssid, password);
+  delay(1500);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi..");
+    ESP.restart();
+    WiFi.begin(ssid, password);
+    delay(1500);
+  }
+  
+  Serial.println("Connected to the WiFi network");
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+
+  while (!client.connected()) {
+    Serial.println("Connecting to MQTT...");
+
+    if (client.connect("")) {
+      Serial.println("connected");
+    } 
+
+    else {
+
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(5000);
+    }
+  }
+
+  client.subscribe("test/message");
+
+}
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  z = "";
+  a = "";
+  th = "";
+  counter = 0;
+ 
+  Serial.print("Message arrived in topic: ");
+  Serial.println(topic);
+ 
+  Serial.print("Message:");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+    if (counter == 0 && (char)payload[i]!= ','){
+      z+=(char)payload[i];
+    }
+    else if (counter == 1 && (char)payload[i]!= ','){
+      a+=(char)payload[i];
+    }
+    else if (counter == 2 && (char)payload[i]!= ','){
+      th+=(char)payload[i];
+    }
+    else if ((char)payload[i]== ','){
+      counter ++;
+    }
+
+  }
+  
+
+  Serial.println("z is");
+  z_len = atoi(z.c_str());
+  a_len = atoi(a.c_str());
+  th_len = atoi(th.c_str());
+  Serial.print(z_len);
+  Serial.print(a_len);
+  Serial.print(th_len);
+
+
+  client.publish("test/response", "got message");
+  Serial.println();
+  Serial.println("-----------------------");
+  //char *ptr = strtok(str, delim);
+  //char *ptr = strtok(str, delim);
+
+ 
+}
+
+// the loop function runs over and over again forever
+void loop() {
+
+  client.loop();
+}
+
+
+
+void move_motor_Z(int height){
+  // Set motor direction clockwise
+
+  int stepheight = height / hight_per_steps;
+	digitalWrite(dirPinz, HIGH);
+  
+	// Spin motor slowly
+	for(int x = 0; x < stepheight; x++)
+	{
+    Serial.print("here ");
+		digitalWrite(stepPinz, HIGH);
+		delayMicroseconds(4000);
+		digitalWrite(stepPinz, LOW);
+		delayMicroseconds(4000);
+	}
+
+}
+
+void move_motor_a_r(int a, int r){
+  
+
+} 

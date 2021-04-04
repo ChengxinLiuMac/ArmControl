@@ -1,0 +1,156 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>
+#include <Servo.h>
+
+int read_soil_humid();
+void get_temp_and_humid(float *, float *);
+void move_motor_XY(int x, int y);
+void oppen_gipeer();
+void close_gripper();
+
+static const int servoPin = 4;
+Servo servo1;
+
+#define DHTTYPE DHT11   // DHT 11 
+const int moist = 36;
+const int dht_pin = 32;
+
+const int dirPin = 10;
+const int stepPin = 33;
+const int stepsPerRevolution = 200;
+
+// Connect to the WiFi
+const char* ssid = "COGECO-DE490";
+const char* password =  "38956COGECO";
+const char* mqttServer = "192.168.0.140";
+const int mqttPort = 8883;
+
+const int air_val = 3455;
+const int water_val = 1572;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+//soil moisture level
+int moist_read = 0;
+
+//ambiant temperature and humidity
+float temp;
+float humid;
+DHT dht(dht_pin, DHTTYPE);
+
+//RGB
+
+//
+
+// the setup function runs once when you press reset or power the board
+void setup() {
+  
+  // initialize digital pin LED_BUILTIN as an output.
+  Serial.begin(9600);
+  dht.begin();
+  servo1.attach(servoPin);
+
+  /*
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.println("Connecting to WiFi..");
+  }
+  
+  Serial.println("Connected to the WiFi network");
+
+    client.setServer(mqttServer, mqttPort);
+ 
+    while (!client.connected()) {
+      Serial.println("Connecting to MQTT...");
+ 
+      if (client.connect("")) {
+ 
+        Serial.println("connected");
+ 
+      } 
+      else {
+ 
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+      }
+    }
+
+*/
+}
+
+// the loop function runs over and over again forever
+void loop() {
+  	// Set motor direction clockwise
+	//digitalWrite(dirPin, HIGH);
+  /*
+	// Spin motor slowly
+	for(int x = 0; x < stepsPerRevolution; x++)
+	{
+    Serial.print("here ");
+		digitalWrite(stepPin, HIGH);
+		delayMicroseconds(4000);
+		digitalWrite(stepPin, LOW);
+		delayMicroseconds(4000);
+	}
+*/
+
+  oppen_gipeer();
+  close_gripper();
+  
+
+  //get instruction on movement
+  get_temp_and_humid(&humid, &temp);
+  Serial.print ("humidity: ");
+  Serial.println(humid);
+  Serial.print ("temperature: ");
+  Serial.println(temp);
+  delay(2000);
+  /*
+  Serial.println(read_soil_humid());
+  delay(500);
+  */
+}
+
+int read_soil_humid (){
+  //TODO: move motor to right position
+  //TODO: move motor down
+
+  moist_read = analogRead(moist);
+  moist_read = map(moist_read, air_val, water_val, 0, 100);
+  if(moist_read < 0){
+    moist_read = 0;
+  }
+
+  return moist_read;
+  
+  //TODO: move motor up
+
+}
+void get_temp_and_humid(float *humid, float *temp){
+  *humid = dht.readHumidity();
+  // Read temperature as Celsius
+  *temp = dht.readTemperature();
+}
+void move_motor_Z(int height){
+
+}
+
+void move_motor_XY(int x, int y){
+
+} 
+void oppen_gipeer(){
+  servo1.write(0);
+
+}
+void close_gripper(){
+    for(int posDegrees = 0; posDegrees <= 30; posDegrees++) {
+      servo1.write(posDegrees);
+      delay(10);
+  }
+}
